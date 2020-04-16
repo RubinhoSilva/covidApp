@@ -6,6 +6,7 @@ import 'package:covid/src/utils/constaints.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:geolocation/geolocation.dart';
 import 'package:toast/toast.dart';
 
 //import "package:motoclubs/src/utils/constaints.dart";
@@ -57,6 +58,31 @@ class _AceitarScreenState extends State<AceitarScreen> {
   _aceitar() async {
     String idDevice;
     String plataforma;
+    double latitude;
+    double longitude;
+
+    final GeolocationResult result = await Geolocation.requestLocationPermission(
+      permission: const LocationPermission(
+        android: LocationPermissionAndroid.fine,
+        ios: LocationPermissionIOS.always,
+      ),
+      openSettingsIfDenied: true,
+    );
+
+    if (result.isSuccessful) {
+      // location permission is granted (or was already granted before making the request)
+      Geolocation.currentLocation(accuracy: LocationAccuracy.best)
+          .listen((result) {
+        if (result.isSuccessful) {
+          latitude = result.location.latitude;
+          longitude = result.location.longitude;
+        }
+      });
+    } else {
+      // location permission is not granted
+      // user might have denied, but it's also possible that location service is not enabled, restricted, and user never saw the permission request dialog. Check the result.error.type for details.
+    }
+
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     if (Theme.of(context).platform == TargetPlatform.iOS) {
       IosDeviceInfo iosDeviceInfo = await deviceInfo.iosInfo;
@@ -73,7 +99,9 @@ class _AceitarScreenState extends State<AceitarScreen> {
     Map<String, dynamic> jsonMap = {
       'idDevice': idDevice,
       'plataforma': plataforma,
-      'localizacao': '',
+      'latitude': latitude,
+      'longitude': longitude,
+      'horario': new DateTime.now()
     };
 
     dioImport.Response response;
@@ -113,4 +141,5 @@ class _AceitarScreenState extends State<AceitarScreen> {
       ),
     );
   }
+
 }

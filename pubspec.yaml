@@ -21,6 +21,8 @@ dependencies:
   flutter_secure_storage: ^3.3.2
   dio: ^3.0.8
   toast: ^0.1.5
+  geolocation: ^1.1.2
+  haversine: ^1.0.2
   flutter:
     sdk: flutter
 
