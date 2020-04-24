@@ -4,6 +4,7 @@ import 'package:dio/dio.dart' as dioImport;
 import 'package:covid/src/pages/home.dart';
 import 'package:covid/src/utils/constaints.dart';
 import 'package:device_info/device_info.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocation/geolocation.dart';
@@ -21,6 +22,16 @@ class AceitarScreen extends StatefulWidget {
 }
 
 class _AceitarScreenState extends State<AceitarScreen> {
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
+  @override
+  void initState(){
+    super.initState();
+    _firebaseMessaging.getToken().then((token){
+      print(token);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
