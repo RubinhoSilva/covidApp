@@ -1,0 +1,50 @@
+> 1,5 vai para a proxima tela
+> 1 no final inclui como suspeito
+< 1 no final inclui como monitorado
+
+tela 1
+    Apresenta algum dos sintomas abaixo:
+
+    Febre - 2
+    Tosse - 2 (+1 se for seca, senao -1)
+    Fadiga - 0,5
+    Dor de cabeça 0,5
+    Dor de garganta 0,5
+
+    Se tiver tosse
+
+tela 1.1
+    Apresenta uma tosse seca?
+
+    Sim +1
+    Nao -1
+
+tela 2
+    Apresenta falta de ar?
+
+    Sim +4
+    Nao
+
+tela 3
+    Apresentou perda do olfato nos ultimos dias?
+
+        Sim +4
+        Nao
+
+tela 4
+    Alguma ponta de algum dedo do seus pes ficaram roxas no ultimos dias?
+
+        Sim +3
+        Nao
+tela 5
+    Apresentou uma sensaçao de areia nos olhos nos ultimos dias?
+
+    Sim +3
+    Nao
+
+
+
+
+apos o primeiro dia, todos os dias tera notificaçao para avaliar os sintomas
+
+cada dia o peso dos sintomas serao dobrados, e a divisao aumentara 0.5 por sintoma

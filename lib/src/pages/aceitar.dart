@@ -23,12 +23,14 @@ class AceitarScreen extends StatefulWidget {
 
 class _AceitarScreenState extends State<AceitarScreen> {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
-
+  var token;
   @override
   void initState(){
     super.initState();
-    _firebaseMessaging.getToken().then((token){
-      print(token);
+
+    //fazer isso quando for future
+    _firebaseMessaging.getToken().then((a){
+      token = a;
     });
   }
 
@@ -111,6 +113,7 @@ class _AceitarScreenState extends State<AceitarScreen> {
             'plataforma': plataforma,
             'latitude': latitude,
             'longitude': longitude,
+            'token': token,
             'horario': new DateTime.now().toString()
           };
 

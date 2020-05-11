@@ -27,6 +27,7 @@ dependencies:
   shared_preferences: ^0.5.6+1
   firebase_core: ^0.2.5
   firebase_messaging: ^5.1.2
+  get_it: ^1.0.3
   flutter:
     sdk: flutter
 

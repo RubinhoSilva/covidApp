@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'package:background_fetch/background_fetch.dart';
+import 'package:covid/src/pages/sintomas/sintomas1.dart';
+import 'package:covid/src/services/push_notification.dart';
+import 'package:covid/src/services/service_locator.dart';
 import 'package:covid/src/utils/constaints.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -7,7 +10,6 @@ import 'package:geolocation/geolocation.dart';
 import 'package:haversine/haversine.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart' as dioImport;
-import 'package:toast/toast.dart';
 
 void backgroundFetchHeadlessTask(String taskId) async {
   print("[BackgroundCovidZero] Headless event received: $taskId");
@@ -108,6 +110,13 @@ void main() {
 class HomeScreen extends StatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
+
+  final PushNotificationService _pushNotificationService =
+  locator<PushNotificationService>();
+
+  Future handleStartUpLogic() async {
+    await _pushNotificationService.initialise();
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -178,18 +187,63 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Padding(
-      padding: EdgeInsets.all(10),
-      child: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-                "Estamos coletando seus dados de geolocalização. Muito obrigado por colaborar!"),
-          ],
+        appBar: AppBar(
+          title: Icon(Icons.home),
+          centerTitle: true,
         ),
-      ),
-    ));
+        drawer: Drawer(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: ListView(
+                  children: <Widget>[
+                    ListTile(
+                      leading: Icon(Icons.local_hospital),
+                      title: Text("Informar sintomas"),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Sintomas1Screen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                child: Align(
+                  alignment: FractionalOffset.bottomCenter,
+                  child: Container(
+                    child: Column(
+                      children: <Widget>[
+                        Divider(),
+                        ListTile(
+                            leading: Icon(Icons.settings),
+                            title: Text("Opções")),
+                        ListTile(
+                            leading: Icon(Icons.help), title: Text("Ajuda"))
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+        body: Padding(
+          padding: EdgeInsets.all(10),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                    "Estamos coletando seus dados de geolocalização. Muito obrigado por colaborar!"),
+              ],
+            ),
+          ),
+        ));
   }
 }
