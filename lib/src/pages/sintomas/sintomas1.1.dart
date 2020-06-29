@@ -1,7 +1,13 @@
+import 'dart:convert';
+
+import 'package:covid/src/pages/sintomas/sintomas1.dart';
 import 'package:covid/src/pages/sintomas/sintomas2.dart';
+import 'package:covid/src/utils/constaints.dart';
 import 'package:covid/src/utils/status.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:toast/toast.dart';
+import 'package:dio/dio.dart' as dioImport;
 
 import '../home.dart';
 
@@ -109,7 +115,7 @@ class _Sintomas11ScreenState extends State<Sintomas11Screen> {
           ),
               (Route<dynamic> route) => false);
     }else{
-      Status.mudarStatus(1, context).then((resposta){
+      _Sintomas11ScreenState.mudarStatus(1, context).then((resposta){
         if (resposta){
           Toast.show(
               "Te monitoraremos nos proximos dias sobre a evoluçao dos sintomas!",
@@ -124,6 +130,44 @@ class _Sintomas11ScreenState extends State<Sintomas11Screen> {
                   (Route<dynamic> route) => false);
         }
       });
+    }
+  }
+
+  static Future<bool> mudarStatus(int status, BuildContext context) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: "token");
+
+    String url = new Constaints().URL + "/atualizarStatus";
+    Map<String, String> headers = {
+      "Content-type": "application/json",
+      "authorization": "Bearer $token"
+    };
+    Map<String, dynamic> jsonMap = {
+      'status': status,
+    };
+
+    dioImport.Response response;
+    dioImport.Dio dio = new dioImport.Dio();
+
+    try {
+      response = await dio.post(url,
+          data: jsonMap, options: dioImport.Options(headers: headers));
+
+      int statusCode = response.statusCode;
+      var jsonData = json.decode(response.toString());
+
+      print(jsonData);
+
+      if (statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } on dioImport.DioError catch (e) {
+      print(e);
+      Toast.show("Erro - $e", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+      return false;
     }
   }
 }

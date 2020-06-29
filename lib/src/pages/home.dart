@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:background_fetch/background_fetch.dart';
+import 'package:covid/src/db/db_helper.dart';
+import 'package:covid/src/models/localizacao.dart';
 import 'package:covid/src/pages/sintomas/sintomas1.dart';
 import 'package:covid/src/services/push_notification.dart';
 import 'package:covid/src/services/service_locator.dart';
@@ -10,16 +12,29 @@ import 'package:geolocation/geolocation.dart';
 import 'package:haversine/haversine.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart' as dioImport;
+import 'package:connectivity/connectivity.dart';
 
 void backgroundFetchHeadlessTask(String taskId) async {
   print("[BackgroundCovidZero] Headless event received: $taskId");
+
+  var connectivityResult = await (Connectivity().checkConnectivity());
+  var dbHelper = DBHelper();
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   double latitudeAntiga = prefs.getDouble(Constaints().LATITUDE);
   double longitudeAntiga = prefs.getDouble(Constaints().LONGITUDE);
 
-  print(latitudeAntiga);
-  print(longitudeAntiga);
+  final storage = new FlutterSecureStorage();
+  String token = await storage.read(key: "token");
+
+  String url = new Constaints().URL + "/atualizarLocalizacao";
+  Map<String, String> headers = {
+    "Content-type": "application/json",
+    "authorization": "Bearer $token"
+  };
+
+  print("latitude Antiga " + latitudeAntiga.toString());
+  print("longitude Antiga " + longitudeAntiga.toString());
 
   final GeolocationResult result = await Geolocation.requestLocationPermission(
     permission: const LocationPermission(
@@ -36,7 +51,7 @@ void backgroundFetchHeadlessTask(String taskId) async {
       if (result.isSuccessful) {
         double latitude = result.location.latitude;
         double longitude = result.location.longitude;
-        print(latitude);
+        print("latitude nova " + latitude.toString());
 
         final harvesine = new Haversine.fromDegrees(
             latitude1: latitudeAntiga,
@@ -44,41 +59,40 @@ void backgroundFetchHeadlessTask(String taskId) async {
             latitude2: latitude,
             longitude2: longitude);
 
-        print(harvesine.distance());
+        print("distancia " + harvesine.distance().toString());
 
         if (harvesine.distance() > 10) {
           prefs.setDouble(Constaints().LATITUDE, latitude);
           prefs.setDouble(Constaints().LONGITUDE, longitude);
 
-          final storage = new FlutterSecureStorage();
-          String token = await storage.read(key: "token");
+          if (connectivityResult == ConnectivityResult.none) {
+            dbHelper.add(Localizacao(
+                null, latitude, longitude, new DateTime.now().toString()));
+          } else {
+            Map<String, dynamic> jsonMap = {
+              'latitude': latitude,
+              'longitude': longitude,
+              'horario': new DateTime.now().toString()
+            };
 
-          String url = new Constaints().URL + "/atualizarLocalizacao";
-          Map<String, String> headers = {
-            "Content-type": "application/json",
-            "authorization": "Bearer $token"
-          };
-          Map<String, dynamic> jsonMap = {
-            'latitude': latitude,
-            'longitude': longitude,
-            'horario': new DateTime.now().toString()
-          };
+//            print(latitude);
 
-          print(latitude);
+            dioImport.Response response;
+            dioImport.Dio dio = new dioImport.Dio();
 
-          dioImport.Response response;
-          dioImport.Dio dio = new dioImport.Dio();
+            try {
+              response = await dio.post(url,
+                  data: jsonMap, options: dioImport.Options(headers: headers));
 
-          try {
-            response = await dio.post(url,
-                data: jsonMap, options: dioImport.Options(headers: headers));
+              int statusCode = response.statusCode;
+              var jsonData = json.decode(response.toString());
 
-            int statusCode = response.statusCode;
-            var jsonData = json.decode(response.toString());
-
-            print(jsonData);
-          } on dioImport.DioError catch (e) {
-            print(e);
+              print(jsonData);
+            } on dioImport.DioError catch (e) {
+              dbHelper.add(Localizacao(
+                  null, latitude, longitude, new DateTime.now().toString()));
+              print(e);
+            }
           }
         }
       }
@@ -86,6 +100,40 @@ void backgroundFetchHeadlessTask(String taskId) async {
   } else {
     // location permission is not granted
     // user might have denied, but it's also possible that location service is not enabled, restricted, and user never saw the permission request dialog. Check the result.error.type for details.
+  }
+
+  if (connectivityResult != ConnectivityResult.none) {
+    Future<List<Localizacao>> localizacoes = dbHelper.getLocalizacoes();
+    localizacoes.then((values) => values.forEach((localizacao) async {
+      Map<String, dynamic> jsonMap = {
+        'latitude': localizacao.latitude,
+        'longitude': localizacao.longitude,
+        'horario': localizacao.horario
+      };
+
+      print(localizacao.latitude);
+      print("Do banco de dados");
+
+      dioImport.Response response;
+      dioImport.Dio dio = new dioImport.Dio();
+
+      try {
+        response = await dio.post(url,
+            data: jsonMap, options: dioImport.Options(headers: headers));
+
+        int statusCode = response.statusCode;
+        var jsonData = json.decode(response.toString());
+
+        print(statusCode);
+        if (statusCode == 200) {
+          dbHelper.delete(localizacao.idLocalizacao);
+        }
+
+        print(jsonData);
+      } on dioImport.DioError catch (e) {
+        print(e);
+      }
+    }));
   }
 
   BackgroundFetch.finish(taskId);
@@ -112,7 +160,7 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 
   final PushNotificationService _pushNotificationService =
-  locator<PushNotificationService>();
+      locator<PushNotificationService>();
 
   Future handleStartUpLogic() async {
     await _pushNotificationService.initialise();
